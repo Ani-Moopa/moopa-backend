@@ -11,6 +11,9 @@ const consumetEpisodeRoute = require("./routes/consumet/episode");
 const consumetSourceRoute = require("./routes/consumet/source");
 
 const PORT = process.env.PORT || 5000;
+const whitelist = process.env.WHITELISTED_URL.includes("example")
+  ? undefined
+  : process.env.WHITELISTED_URL;
 
 const app = express();
 
@@ -24,13 +27,6 @@ const limiter = rateLimit({
 
 app.use(limiter);
 app.set("trust proxy", 1);
-
-const whitelist = [
-  "https://beta.moopa.live",
-  "https://demo.moopa.live",
-  "https://ruka.moopa.live",
-  "https://moopa.live",
-];
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -46,11 +42,19 @@ app.use(cors());
 
 app.use("/", mainRoute);
 app.use("/api/schedules", scheduleRoute);
-app.use("/anify/episode", episodeRoute);
-app.use("/anify/source", sourceRoute);
+app.use("/anify/episode", cors(whitelist && corsOptions), episodeRoute);
+app.use("/anify/source", cors(whitelist && corsOptions), sourceRoute);
 
-app.use("/consumet/episode", consumetEpisodeRoute);
-app.use("/consumet/source", consumetSourceRoute);
+app.use(
+  "/consumet/episode",
+  cors(whitelist && corsOptions),
+  consumetEpisodeRoute
+);
+app.use(
+  "/consumet/source",
+  cors(whitelist && corsOptions),
+  consumetSourceRoute
+);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}.`);
